@@ -1,0 +1,93 @@
+---
+title: "FPCC2 - Laboratório 1"
+author: "<<aluno>>"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Importando dados
+```{r, echo = FALSE}
+library(ggplot2)
+library(scales)
+
+source("../code/lab1.R")
+```
+
+# Qual a quantidade e percentual de alunos em cada tipo de curso (mestrado ou doutorado)?
+
+```{r}
+
+q1 <- turma_fpcc2 %>% select(tipo_curso, matricula) %>% 
+  group_by(tipo_curso) %>% 
+  summarise(num = n()) %>% 
+  mutate(perc = paste(num / nrow(turma_fpcc2) * 100, "%", sep = ""),
+         perc2 = num / nrow(turma_fpcc2))
+
+ggplot(q1, aes(tipo_curso, num, fill = tipo_curso)) + 
+  geom_bar(stat = "identity") + 
+  xlab("Tipo de curso") +
+  ylab("Número de alunos") + 
+  theme_bw(base_size = 14) + 
+  theme(legend.position = "None")
+
+ggplot(q1, aes(tipo_curso, perc2, fill = tipo_curso)) + 
+  geom_bar(stat = "identity") + 
+  xlab("Tipo de curso") +
+  ylab("Alunos") + 
+  theme_bw(base_size = 14) + 
+  scale_y_continuous(labels = percent) + 
+  theme(legend.position = "None")
+```
+
+# Qual a faixa etária (média, desvio padrão, mínimo, máximo)? Boxplot dos dados da idade (mediana)
+
+```{r, echo=TRUE}
+df_idade <- turma_fpcc2 %>% select(idade) %>% 
+  mutate(idade_int = as.integer(gsub("[a-z]|\\.", "", idade)))
+
+mean(df_idade$idade_int)
+min(df_idade$idade_int)
+max(df_idade$idade_int)
+median(df_idade$idade_int)
+sd(df_idade$idade_int)
+
+summary(df_idade$idade_int)
+boxplot(df_idade$idade_int)
+```
+
+# Qual a quantidade de alunos por estado?
+
+```{r}
+turma_fpcc2 %>% select(uf) %>% 
+  filter(uf != "Opção 1")
+
+turma_fpcc2 %>% select(uf) %>% 
+  mutate(uf = ifelse(uf == "Opção 1", NA, uf)) %>% 
+  mutate(uf = case_when(
+    uf == "Paraiba" ~ "PB", 
+    uf == "Paraíba" ~ "PB",
+    uf == "PB (Campina Grande)" ~ "PB",
+    uf == "Acre" ~ "AC",
+    uf == "Alagoas" ~ "AL",
+    uf == "Pernambuco, mas moro em Campina Grande há mais de 20 anos" ~ "PE",
+    TRUE ~ uf
+  )) %>% 
+  filter(!is.na(uf)) %>%
+  count(uf) %>% 
+  arrange(-n, uf)
+
+
+ufs <- c("PB", "PB", "PB", "PB", "AC", "AL", "PE")
+names <- c("PB", "Paraiba", "Paraíba", "PB (Campina Grande)", "Acre", "Alagoas", 
+           "Pernambuco, mas moro em Campina Grande há mais de 20 anos")
+
+df_uf <- data.frame(uf = names, ufs)
+turma_fpcc2 %>% select(uf) %>% 
+  full_join(df_uf)
+```
+
+
+
+
