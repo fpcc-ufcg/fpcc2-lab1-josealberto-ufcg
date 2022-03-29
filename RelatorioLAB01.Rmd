@@ -1,0 +1,185 @@
+---
+title: "RelatorioLAB01"
+author: "José Alberto Souza Paulino"
+date: "28/03/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r bibliotecas_e_baseDados , include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(here)
+library(stringr)
+library(ggplot2)
+library(magrittr)
+library(knitr)
+
+# Código base -----------------------------------------------
+
+# lendo arquivo de dados
+turma_fpcc2 <- read_csv(here("data/dados-fpcc2-22.1.csv"))
+
+# visão geral dos dados 
+glimpse(turma_fpcc2)
+head(turma_fpcc2)
+
+# renomeando colunas
+colnames <- c("tipo_curso", "matricula", "conf_sumarios", "conf_histo", 
+              "ler_ingles", "prog_r", "linear", "logistica",
+              "exp_pesq", "exp_dev", "exp_admin", 
+              "exp_desc", "area", "outra",
+              "idade", "irmaos", "altura", "uf")
+colnames(turma_fpcc2) <- colnames
+
+# visão geral dados renomeados
+#glimpse(turma_fpcc2)
+```
+
+## Questão 01
+
+<p style="color:blue">
+*Calcule média e desvio padrão da idade e nível de interesse. As métricas contendos as métricas calculadas para idade e devem ser apresentadas de forma ordenada, da maior idade para a menor. Além de apresentar no relatório, os resultados devem ser salvos em um arquivo csv, que deve ser adicionado ao repositório.*
+!</p>
+
+```{r questao_01 , echo=FALSE}
+# LIMPEZA DA BASE DE DADOS
+turma_fpcc2$idade = gsub("\\.*", "", turma_fpcc2$idade)
+turma_fpcc2$idade = gsub("\\ anos*", "", turma_fpcc2$idade)
+turma_fpcc2$idade = as.integer(turma_fpcc2$idade)
+```
+
+### 01.01 Média e desvio padrão para idade dos alunos da turma de FPCC II:
+
+```{r questao_01_1 , echo=FALSE}
+print(paste0("Média das idades: ",mean(turma_fpcc2$idade)))
+print(paste0("Desvio padrão das idades: ",sd(turma_fpcc2$idade)))
+```
+
+### 01.02 Média e desvio padrão para o número de alunos de FPCC II de acordo com o nível de confiança em progração R:
+
+```{r questao_01_2 , echo=FALSE}
+
+temp012 = turma_fpcc2 %>%
+  count(prog_r) %>%
+  mutate(media = ((n)/sum(n))) %>%
+  mutate(des_padrao = sqrt((n-media)^2) )%>%
+  select(prog_r, media,des_padrao)
+
+kable(temp012)
+```
+
+
+```{r questao_01_2csv , echo=TRUE}
+
+write.csv(temp012, "Metricas_nivel_confianca_ProgR.csv", row.names = TRUE)
+```
+<br>
+<br>
+
+
+## Questão 02
+<p style="color:blue">
+*Qual o curso com maior valor médio de idade? Discutir os resultados com base nos dados disponíveis em termos de representatividade.*
+<p>
+
+```{r questao_02, echo=FALSE}
+
+temp02 = curso_media_idade = turma_fpcc2 %>%
+  group_by(tipo_curso) %>%
+  summarise_at(vars(idade), list(media_idade = mean))
+
+kable(temp02)
+
+turma_fpcc2_processado <- turma_fpcc2
+```
+
+A média da idade dos alunos de mestrado estão bem próximos da média geral, já a média para alunos de doutorado está bem acima da média geral. 
+
+<br>
+<br>
+
+
+## Questão 03
+<p style="color:blue">
+*Crie um gráfico que mostra a idade média para cada curso. Apresente o gráfico e discuta os resultados no relatório. O gráfico também deve ser salvo em uma imagem no formato png, que deve ser adicionada ao repositório.*
+<p>
+
+```{r questao_03, echo=FALSE}
+#grafico_media_idade_curso <- 
+ggplot(curso_media_idade, aes(x=tipo_curso, y=media_idade, color=tipo_curso)) + 
+  geom_bar(stat = "identity", fill="white")+
+  ylab("Média de idades") + xlab("Tipo do curso")+
+  coord_flip()
+
+#ggsave("grafico_media_idade_curso.png", grafico_media_idade_curso)
+```
+
+Curso de doutorado apresenta média de idade maior que o curso de mestrado. Esta observação é compreensível uma vez que, em geral, o aluno de doutorado já passou pelo mestrado e se espera, que a faixa etária seja um pouco maior. 
+
+<br>
+<br>
+
+## Questão 04
+<p style="color:blue">
+*Crie um gráfico que mostra o percentual de alunos para cada estado de origem. Apresente o gráfico e discuta os resultados no relatório. O gráfico também deve ser salvo em uma imagem no formato png, que deve ser adicionada ao repositório.*
+<p>
+
+```{r questao_04, echo=FALSE}
+turma_fpcc2$uf = gsub("\\Acre", "AC", turma_fpcc2$uf)
+turma_fpcc2$uf = gsub("\\Pe.*", "PE", turma_fpcc2$uf)
+turma_fpcc2$uf = gsub("\\Par.*", "PB", turma_fpcc2$uf)
+turma_fpcc2$uf = gsub("\\PB.*", "PB", turma_fpcc2$uf)
+turma_fpcc2$uf = gsub("\\Ala.*", "AL", turma_fpcc2$uf)
+
+percent_aluno_df = subset(turma_fpcc2, uf != "Opção 1")
+
+
+percent_aluno = percent_aluno_df %>%
+  count(uf) %>%
+  mutate(percentual = n/sum(n) *100)
+
+#percent_aluno_uf <-
+plot(
+ggplot(percent_aluno, aes(x=uf, y=percentual, color=uf)) + 
+  geom_bar(stat = "identity", fill="white")+
+  ylab("%") + xlab("UF - Unifade Federativa")
+)
+#ggsave("percent_aluno_uf.png", percent_aluno_uf)
+
+```
+<br>
+
+Os alunos residentes na Paraíba constituim mais de 70% no curso. 
+<br>
+<br>
+
+## Questão 05
+<p style="color:blue">
+*Compare a média de idade geral com a média de idade dos top-5 e dos bottom-5. Além de apresentar e discutir os resultados no relatório, salvar em uma tabela (dataframe) com as médias em questão.*
+<p>
+```{r questao_05, echo=FALSE}
+temp05 <- matrix(c('Med_TOP5', mean(turma_fpcc2_processado$idade %>% head()),
+                'Med_BOTTOM5', mean(turma_fpcc2_processado$idade %>% tail()),
+                'Med_Geral', mean(turma_fpcc2_processado$idade)),ncol=2,byrow=TRUE)
+colnames(temp05) <- c("MEDIA","VALOR")
+
+kable(temp05)
+
+
+ggplot(data.frame(temp05), aes(x=MEDIA, y= (VALOR), color=MEDIA)) + 
+  geom_bar(stat = "identity", fill="white")+
+  ylab("Valores médios - idade alunos") + xlab("Tipos de médias")+
+  coord_flip()
+```
+
+
+
+
+
